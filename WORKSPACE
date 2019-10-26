@@ -37,8 +37,8 @@ bind(
 # 1. Determine SHA256 `wget https://github.com/envoyproxy/envoy-wasm/archive/$COMMIT.tar.gz && sha256sum $COMMIT.tar.gz`
 # 2. Update .bazelrc and .bazelversion files.
 #
-# envoy-wasm commit date: 10/22/2019
-ENVOY_SHA = "1da10a5fa59006be0671d7133ed6749a3ea9ac2b"
+# envoy-wasm commit date: 10/26/2019, forced ALS.
+ENVOY_SHA = "957d72c69a420eb6d746a5bb15de6ab6eacfb70c"
 
 ENVOY_SHA256 = "69a9feaa66761afac7485be48e9ac12fc50e5057a3994e87aacba147d2a43be8"
 
@@ -48,7 +48,7 @@ http_archive(
     name = "envoy",
     sha256 = ENVOY_SHA256,
     strip_prefix = "envoy-wasm-" + ENVOY_SHA,
-    url = "https://github.com/envoyproxy/envoy-wasm/archive/" + ENVOY_SHA + ".tar.gz",
+    url = "https://github.com/dio/envoy-wasm/archive/" + ENVOY_SHA + ".tar.gz",
 )
 
 # TODO(silentdai) Use bazel args to select envoy between local or http
