@@ -38,13 +38,13 @@ bind(
 # 2. Update .bazelversion, envoy.bazelrc and .bazelrc if needed.
 #
 # Commit date: 7/28/20 - Branch: release-1.7
-ENVOY_SHA = "ab94b5e8ff075e2f64a0e68e5bbc42f53a07b182"
+ENVOY_SHA = "805bb038de83c5a0a9a10d276869a4bd46ac0653"
 
-ENVOY_SHA256 = "f2f536247bc1ebffded45bc3063f56b30919cb04b00ccb584c81b3b741fc5038"
+ENVOY_SHA256 = "31969e5132cd128aaaef0a6b30003119dd413f856f6cd3a5ea3fd12dfa2cdf29"
 
-ENVOY_ORG = "istio"
+ENVOY_ORG = "dio"
 
-ENVOY_REPO = "envoy"
+ENVOY_REPO = "istio-envoy"
 
 # To override with local envoy, just pass `--override_repository=envoy=/PATH/TO/ENVOY` to Bazel or
 # persist the option in `user.bazelrc`.
