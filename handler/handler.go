@@ -75,7 +75,7 @@ func (h *Handler) Args() (*Args, error) {
 	var adminAddressPath string
 
 	// Path to configuration file.
-	if !contains(options.ForwardedArgs, "-c") || !contains(options.ForwardedArgs, "--config-path") {
+	if !contains(options.ForwardedArgs, "-c") && !contains(options.ForwardedArgs, "--config-path") {
 		configPath, err = buildConfigPath(h.c)
 		if err != nil {
 			return nil, fmt.Errorf("failed to build config: %w", err)
@@ -83,7 +83,7 @@ func (h *Handler) Args() (*Args, error) {
 		args = append(args, "-c", configPath)
 	}
 
-	if !contains(options.ForwardedArgs, "--use-dynamic-base-id") || !contains(options.ForwardedArgs, "--base-id") {
+	if !contains(options.ForwardedArgs, "--use-dynamic-base-id") && !contains(options.ForwardedArgs, "--base-id") {
 		// The server chooses a base ID dynamically. Supersedes a static base ID. May not be used when
 		// the restart epoch is non-zero.
 		args = append(args, "--use-dynamic-base-id") // So we can run multiple proxies.
@@ -152,12 +152,12 @@ func buildConfigPath(c *config.Bootstrap) (string, error) {
 	if c.Output != "" {
 		if c.Output == "stdout" {
 			_, _ = os.Stdout.Write(buf.Bytes())
-			return c.Output, nil
+			return out.Name(), out.Close()
 		}
 
 		if c.Output == "stderr" {
 			_, _ = os.Stderr.Write(buf.Bytes())
-			return c.Output, nil
+			return out.Name(), out.Close()
 		}
 
 		if _, err := os.Stat(c.Output); errors.Is(err, os.ErrNotExist) {
@@ -172,7 +172,6 @@ func buildConfigPath(c *config.Bootstrap) (string, error) {
 		if err := os.Rename(out.Name(), c.Output); err != nil {
 			return "", err
 		}
-		return c.Output, nil
 	}
 	return out.Name(), out.Close()
 }

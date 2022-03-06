@@ -29,7 +29,7 @@ type Flags struct {
 	XDSServerURL   string `help:"Specify the xDS server URL." default:"localhost:9901"`
 	XDSClusterName string `help:"Specify the xDS cluster name." default:"xds_cluster"`
 	UseGoogleGRPC  bool   `help:"Specify to use Google gRPC client implementation."`
-	Output         string `help:"Specify the file to write the rendered config." default:"stdout"`
+	Output         string `help:"Specify the file to write the rendered config. Available values: stdout, stderr, or a valid file path"`
 	Version        bool   `help:"Show application version."`
 }
 
