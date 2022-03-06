@@ -24,7 +24,7 @@ dynamic_resources:
     transport_api_version: V3
     grpc_services:
       - envoy_grpc:
-          cluster_name: xds-cluster
+          cluster_name: "{{ .XDSClusterName }}"
 
 # TODO(dio): tracing
 
@@ -35,7 +35,7 @@ static_resources:
     - connect_timeout: 1s
       type: STRICT_DNS
       load_assignment:
-        cluster_name: xds-cluster
+        cluster_name: "{{ .XDSClusterName }}"
         endpoints:
           - lb_endpoints:
               - endpoint:
@@ -48,4 +48,4 @@ static_resources:
           "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
           explicit_http_config:
             http2_protocol_options: {}
-      name: xds-cluster
+      name: "{{ .XDSClusterName }}"
