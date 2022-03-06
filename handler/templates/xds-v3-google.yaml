@@ -1,0 +1,40 @@
+admin:
+  access_log_path: /dev/stdout
+  address:
+    socket_address:
+      address: 127.0.0.1 # Admin page is only accessible locally.
+      port_value: 0
+
+node:
+  id: "{{ .NodeID }}"
+  cluster: proxy
+  # TODO(dio): locality
+  # TODO(dio): metadata
+
+dynamic_resources:
+  lds_config:
+    ads: {}
+    resource_api_version: V3
+  cds_config:
+    ads: {}
+    resource_api_version: V3
+  ads_config:
+    api_type: GRPC
+    set_node_on_first_message_only: true
+    transport_api_version: V3
+    grpc_services:
+      - google_grpc:
+          target_uri: "{{ .XDSServerAddress }}:{{ .XDSServerPort }}"
+          stat_prefix: "xds"
+          channel_args:
+            args:
+              grpc.http2.max_pings_without_data:
+                int_value: 0
+              grpc.keepalive_time_ms:
+                int_value: 10000
+              grpc.keepalive_timeout_ms:
+                int_value: 20000
+
+# TODO(dio): tracing
+
+# TODO(dio): layered_runtime:

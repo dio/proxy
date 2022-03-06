@@ -1,0 +1,51 @@
+admin:
+  access_log_path: /dev/stdout
+  address:
+    socket_address:
+      address: 127.0.0.1 # Admin page is only accessible locally.
+      port_value: 0
+
+node:
+  id: "{{ .NodeID }}"
+  cluster: proxy
+  # TODO(dio): locality
+  # TODO(dio): metadata
+
+dynamic_resources:
+  lds_config:
+    ads: {}
+    resource_api_version: V3
+  cds_config:
+    ads: {}
+    resource_api_version: V3
+  ads_config:
+    api_type: GRPC
+    set_node_on_first_message_only: true
+    transport_api_version: V3
+    grpc_services:
+      - envoy_grpc:
+          cluster_name: xds-cluster
+
+# TODO(dio): tracing
+
+# TODO(dio): layered_runtime:
+
+static_resources:
+  clusters:
+    - connect_timeout: 1s
+      type: STRICT_DNS
+      load_assignment:
+        cluster_name: xds-cluster
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: "{{ .XDSServerAddress }}"
+                      port_value: {{ .XDSServerPort }}
+      typed_extension_protocol_options:
+        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+          "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+          explicit_http_config:
+            http2_protocol_options: {}
+      name: xds-cluster
