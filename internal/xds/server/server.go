@@ -58,6 +58,7 @@ type Server struct {
 	cache      cache.SnapshotCache
 	mu         sync.RWMutex
 	c          *config.Bootstrap
+	l          net.Listener
 	// This is set when grpcServer.Serve() is called regardless the call returns error or not.
 	served bool
 }
@@ -81,14 +82,15 @@ func (s *Server) Run(ctx context.Context) error {
 	// Attach all handlers.
 	registerServer(s.grpcServer, server.NewServer(ctx, s.cache, &callbacks{}))
 
-	l, err := net.Listen("tcp", s.c.ListenAddress)
+	var err error
+	s.l, err = net.Listen("tcp", s.c.ListenAddress)
 	if err != nil {
 		return err
 	}
 
 	errors := make(chan error, 1)
 	go func(s *Server) {
-		errors <- s.grpcServer.Serve(l)
+		errors <- s.grpcServer.Serve(s.l)
 	}(s)
 
 	s.mu.Lock()
@@ -100,15 +102,19 @@ func (s *Server) Run(ctx context.Context) error {
 	case <-ctx.Done():
 	}
 
+	s.stop() // gracefully stop the gRPC server.
 	return err
 }
 
-func (s *Server) Interrupt(error) {
+func (s *Server) stop() {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	if s.grpcServer == nil || !s.served {
 		return
 	}
+	time.AfterFunc(15*time.Second, func() {
+		_ = s.l.Close()
+	})
 	s.grpcServer.GracefulStop()
 }
 

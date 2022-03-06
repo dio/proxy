@@ -22,7 +22,6 @@ func Run(ctx context.Context, c *config.Bootstrap) error {
 		g.Add(func() error {
 			return s.Run(ctx)
 		}, func(err error) {
-			s.Interrupt(err)
 			cancel()
 		})
 	}
