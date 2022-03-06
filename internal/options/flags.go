@@ -28,8 +28,8 @@ type Flags struct {
 	NodeID         string `help:"Specify the proxy node ID." default:"default"`
 	XDSServerURL   string `help:"Specify the xDS server URL." default:"localhost:9901"`
 	XDSClusterName string `help:"Specify the xDS cluster name." default:"xds_cluster"`
+	XDSResources   string `help:"A directory containing resources." default:""`
 	UseGoogleGRPC  bool   `help:"Specify to use Google gRPC client implementation."`
-	Resources      string `help:"A directory containing resources." default:""`
 	AdminPort      int    `help:"Specify the admin interface port"`
 	StatsPort      int    `help:"Specify the exposed stats port"`
 	Output         string `help:"Specify the file to write the rendered config. Available values: stdout, stderr, or a valid file path"`
@@ -61,10 +61,10 @@ func (f *Flags) ToBootstrap() (*config.Bootstrap, error) {
 		XDSServerAddress: host,
 		XDSServerPort:    port,
 		XDSClusterName:   f.XDSClusterName,
+		XDSResources:     f.XDSResources,
 		StatsPort:        f.StatsPort,
 		AdminPort:        f.AdminPort,
 		Output:           f.Output,
 		UseGoogleGRPC:    f.UseGoogleGRPC,
-		Resources:        f.Resources,
 	}, nil
 }

@@ -10,6 +10,7 @@ require (
 	github.com/fsnotify/fsnotify v1.5.2-0.20220216014147-a83458b875bd
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/oklog/run v1.1.0
+	github.com/segmentio/ksuid v1.0.5-0.20220130044332-7e86c6a66267
 	github.com/ulikunitz/xz v0.5.10
 	google.golang.org/grpc v1.36.0
 	google.golang.org/protobuf v1.27.1

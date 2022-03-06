@@ -14,6 +14,7 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/fsnotify/fsnotify"
+	"github.com/segmentio/ksuid"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"sigs.k8s.io/yaml"
@@ -116,7 +117,7 @@ func (w *Watcher) update() error {
 			}
 			proto.Merge(&merged, r.StaticResources)
 		}
-		snap, err := cache.NewSnapshot(nodeID, map[resource.Type][]types.Resource{
+		snap, err := cache.NewSnapshot(nodeID+"~"+ksuid.New().String(), map[resource.Type][]types.Resource{
 			resource.ClusterType:  clustersToResources(merged.Clusters),
 			resource.ListenerType: listenersToResources(merged.Listeners),
 		})

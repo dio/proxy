@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"syscall"
 
 	"github.com/oklog/run"
@@ -41,23 +42,10 @@ func Run(ctx context.Context, c *config.Bootstrap) error {
 		return err
 	}
 
-	// Handle config preparation, config watching, TLS establishment.
-	h := handler.New(c)
-	args, err := h.Args()
-	if err != nil {
-		return err
-	}
-	defer func() {
-		_ = args.Cleanup()
-	}()
-
-	if c.Output != "" {
-		return nil
-	}
-
-	if c.Resources != "" { // When user asks to watch a directory, activate the embedded xDS server.
+	if c.XDSResources != "" { // When user asks to watch a directory, activate the embedded xDS server.
+		c.NodeID = filepath.Clean(c.XDSResources)
 		xdsBootstrap := &xdsconfig.Bootstrap{
-			Resources:     c.Resources,
+			Resources:     c.XDSResources,
 			ListenAddress: fmt.Sprintf(":%d", c.XDSServerPort),
 		}
 
@@ -81,6 +69,20 @@ func Run(ctx context.Context, c *config.Bootstrap) error {
 				cancel()
 			})
 		}
+	}
+
+	// Handle config preparation, config watching, TLS establishment.
+	h := handler.New(c)
+	args, err := h.Args()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = args.Cleanup()
+	}()
+
+	if c.Output != "" {
+		return nil
 	}
 
 	{
