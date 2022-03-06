@@ -16,6 +16,7 @@ package proxy
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"syscall"
 
@@ -24,6 +25,9 @@ import (
 	"github.com/dio/proxy/config"
 	"github.com/dio/proxy/handler"
 	"github.com/dio/proxy/internal/downloader"
+	xdsconfig "github.com/dio/proxy/internal/xds/config"
+	xdsserver "github.com/dio/proxy/internal/xds/server"
+	"github.com/dio/proxy/internal/xds/watcher"
 	"github.com/dio/proxy/runner"
 )
 
@@ -49,6 +53,34 @@ func Run(ctx context.Context, c *config.Bootstrap) error {
 
 	if c.Output != "" {
 		return nil
+	}
+
+	if c.Resources != "" { // When user asks to watch a directory, activate the embedded xDS server.
+		xdsBootstrap := &xdsconfig.Bootstrap{
+			Resources:     c.Resources,
+			ListenAddress: fmt.Sprintf(":%d", c.XDSServerPort),
+		}
+
+		xdsServer := xdsserver.New(xdsBootstrap)
+		{
+
+			runCtx, cancel := context.WithCancel(ctx)
+			g.Add(func() error {
+				return xdsServer.Run(runCtx)
+			}, func(err error) {
+				cancel()
+			})
+		}
+
+		w := watcher.New(xdsBootstrap, xdsServer)
+		{
+			runCtx, cancel := context.WithCancel(ctx)
+			g.Add(func() error {
+				return w.Run(runCtx)
+			}, func(err error) {
+				cancel()
+			})
+		}
 	}
 
 	{

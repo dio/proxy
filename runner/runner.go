@@ -42,6 +42,8 @@ func (r *Runner) Run(ctx context.Context, args []string) error {
 	cmd := exec.Command(filepath.Clean(r.binaryPath), args...) //nolint:gosec
 	// TODO(dio): Setpdeathsig to true and execute cmd.Start in a locked thread through channel on Linux.
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+
+	// TODO(dio): Add log streamer when we have decided the log library that we want to use.
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 

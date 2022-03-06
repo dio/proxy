@@ -49,4 +49,5 @@ type Bootstrap struct {
 	StatsPort        int
 	Output           string
 	UseGoogleGRPC    bool
+	Resources        string
 }
