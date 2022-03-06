@@ -26,9 +26,9 @@ var ForwardedArgs config.ForwardedArgs
 
 type Flags struct {
 	NodeID         string `help:"Specify the proxy node ID." default:"default"`
-	XDSServerURL   string `help:"Specify the xDS server URL" default:"localhost:9901"`
-	XDSClusterName string `help:"Specify the xDS cluster name" default:"xds_cluster"`
-	UseGoogleGRPC  bool   `help:"Specify to use Google gRPC client implementation"`
+	XDSServerURL   string `help:"Specify the xDS server URL." default:"localhost:9901"`
+	XDSClusterName string `help:"Specify the xDS cluster name." default:"xds_cluster"`
+	UseGoogleGRPC  bool   `help:"Specify to use Google gRPC client implementation."`
 	Version        bool   `help:"Show application version."`
 }
 

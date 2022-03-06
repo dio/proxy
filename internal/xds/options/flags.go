@@ -17,8 +17,8 @@ package options
 import "github.com/dio/proxy/internal/xds/config"
 
 type Flags struct {
-	ListenAddress string `help:"Specify the xDS server listen address" default:":9901"`
-	Resources     string `help:"A directory containing resources" default:""`
+	ListenAddress string `help:"Specify the xDS server listen address." default:":9901"`
+	Resources     string `help:"A directory containing resources." default:""`
 	Version       bool   `help:"Show application version."`
 }
 
