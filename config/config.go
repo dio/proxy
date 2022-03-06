@@ -45,6 +45,8 @@ type Bootstrap struct {
 	XDSServerAddress string
 	XDSServerPort    int
 	XDSClusterName   string
+	AdminPort        int
+	StatsPort        int
 	Output           string
 	UseGoogleGRPC    bool
 }

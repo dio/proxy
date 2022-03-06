@@ -21,12 +21,14 @@ import (
 	_ "embed" // to allow embedding files.
 	"errors"
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
 	"text/template"
 
 	bootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 	"sigs.k8s.io/yaml"
 
 	"github.com/dio/proxy/config"
@@ -40,6 +42,9 @@ var xdsV3Envoy string
 
 //go:embed templates/xds-v3-google.yaml
 var xdsV3Google string
+
+//go:embed templates/stats-v3.yaml
+var statsV3 string
 
 // Args holds arguments values and a cleanup function to remove all produced files (or objects).
 type Args struct {
@@ -101,6 +106,17 @@ func (h *Handler) Args() (*Args, error) {
 		args = append(args, "--disable-hot-restart") // Disable hot restart functionality.
 	}
 
+	if !contains(options.ForwardedArgs, "--drain-strategy") {
+		args = append(args, "--drain-strategy", "immediate")
+	}
+
+	if !contains(options.ForwardedArgs, "--file-flush-interval-msec") {
+		// Reference: https://github.com/istio/istio/blob/f6b1aa2d1956712018cd69051a7405424fbb7e04/pkg/envoy/proxy.go#L126-L132.
+		args = append(args, "--file-flush-interval-msec", "1000")
+	}
+	// TODO(dio): Accommodate more options from:
+	// https://github.com/istio/istio/blob/f6b1aa2d1956712018cd69051a7405424fbb7e04/pkg/envoy/proxy.go#L122-L125.
+
 	args = append(args, options.ForwardedArgs...)
 	return &Args{
 		Values: args,
@@ -116,12 +132,7 @@ func (h *Handler) Args() (*Args, error) {
 	}, nil
 }
 
-func buildConfigPath(c *config.Bootstrap) (string, error) {
-	out, err := os.CreateTemp("", "*_config.yaml")
-	if err != nil {
-		return "", err
-	}
-
+func buildConfigPath(c *config.Bootstrap) (string, error) { //nolint:gocyclo
 	cfg := xdsV3Envoy
 	if c.UseGoogleGRPC {
 		cfg = xdsV3Google
@@ -129,6 +140,14 @@ func buildConfigPath(c *config.Bootstrap) (string, error) {
 	tmpl, err := template.New("bootstrap").Parse(cfg)
 	if err != nil {
 		return "", err
+	}
+
+	// TODO(dio): Check if we only need this when stats port is defined.
+	if c.AdminPort == 0 {
+		c.AdminPort, err = getFreePort()
+		if err != nil {
+			return "", err
+		}
 	}
 
 	var buf bytes.Buffer
@@ -139,41 +158,96 @@ func buildConfigPath(c *config.Bootstrap) (string, error) {
 	}
 	_ = writer.Flush()
 
-	err = validateBootstrap(buf.Bytes())
+	merged, err := parseAndValidateBootstrap(buf.Bytes())
 	if err != nil {
 		return "", err
 	}
 
-	_, err = out.Write(buf.Bytes())
-	if err != nil {
-		return "", err
-	}
+	var j []byte
 
-	if c.Output != "" {
-		if c.Output == "stdout" {
-			_, _ = os.Stdout.Write(buf.Bytes())
-			return out.Name(), out.Close()
-		}
-
-		if c.Output == "stderr" {
-			_, _ = os.Stderr.Write(buf.Bytes())
-			return out.Name(), out.Close()
-		}
-
-		if _, err := os.Stat(c.Output); errors.Is(err, os.ErrNotExist) {
-			err = os.MkdirAll(filepath.Dir(filepath.Clean(c.Output)), os.ModePerm)
-			if err != nil {
-				return "", err
-			}
-		} else {
-			return "", fmt.Errorf("%s exists", c.Output)
-		}
-
-		if err := os.Rename(out.Name(), c.Output); err != nil {
+	// TODO(dio): Find a way to say this is set.
+	if c.StatsPort > 0 {
+		tmpl, err = template.New("stats").Parse(statsV3)
+		if err != nil {
 			return "", err
 		}
+
+		var statsBuf bytes.Buffer
+		statsWriter := bufio.NewWriter(&statsBuf)
+		err = tmpl.Execute(statsWriter, c)
+		if err != nil {
+			return "", err
+		}
+		_ = statsWriter.Flush()
+
+		j, err = yaml.YAMLToJSON(statsBuf.Bytes())
+		if err != nil {
+			return "", err
+		}
+
+		var stats bootstrapv3.Bootstrap
+		err = protojson.Unmarshal(j, &stats)
+		if err != nil {
+			return "", err
+		}
+		proto.Merge(merged, &stats)
 	}
-	return out.Name(), out.Close()
+
+	j, err = protojson.Marshal(merged)
+	if err != nil {
+		return "", err
+	}
+
+	y, err := yaml.JSONToYAML(j)
+	if err != nil {
+		return "", err
+	}
+
+	if c.Output != "stdout" && c.Output != "stderr" {
+		out, err := os.CreateTemp("", "*_config.yaml")
+		if err != nil {
+			return "", err
+		}
+
+		_, err = out.Write(y)
+		if err != nil {
+			return out.Name(), err
+		}
+
+		err = out.Close()
+		if err != nil {
+			return out.Name(), err
+		}
+
+		if c.Output != "" {
+			if _, err := os.Stat(c.Output); errors.Is(err, os.ErrNotExist) {
+				err = os.MkdirAll(filepath.Dir(filepath.Clean(c.Output)), os.ModePerm)
+				if err != nil {
+					return out.Name(), err
+				}
+			} else {
+				return out.Name(), fmt.Errorf("%s exists", c.Output)
+			}
+
+			if err := os.Rename(out.Name(), c.Output); err != nil {
+				return out.Name(), err
+			}
+		}
+
+		return out.Name(), nil
+	}
+
+	if c.Output == "stdout" {
+		_, _ = os.Stdout.Write(buf.Bytes())
+		return "", nil
+	}
+
+	if c.Output == "stderr" {
+		_, _ = os.Stderr.Write(buf.Bytes())
+		return "", nil
+	}
+
+	return "", nil
 }
 
 func createAdminAddressPath() (string, error) {
@@ -193,32 +267,49 @@ func contains(entries []string, target string) bool {
 	return false
 }
 
-func validateBootstrap(content []byte) error {
+func parseAndValidateBootstrap(content []byte) (*bootstrapv3.Bootstrap, error) {
 	j, err := yaml.YAMLToJSON(content)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	var bootstrap bootstrapv3.Bootstrap
 	err = protojson.Unmarshal(j, &bootstrap)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if bootstrap.GetNode().GetId() == "" {
-		return errors.New("missing node ID")
+		return nil, errors.New("missing node ID")
 	}
 
 	// Currently, we require dynamic resources to be always available, but when the config is
 	// static-only, we should relax this and do another way of validating the required bootstrap
 	// components.
 	if (bootstrap.DynamicResources) == nil {
-		return errors.New("missing dynamic resources")
+		return nil, errors.New("missing dynamic resources")
 	}
 
 	// TODO(dio): Validate using the fine-grained JSON schema so we can refer to the offending lines.
 	err = bootstrap.ValidateAll()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return &bootstrap, nil
+}
+
+// getFreePort asks the kernel for a free open port that is ready to use.
+func getFreePort() (int, error) {
+	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+	if err != nil {
+		return 0, err
+	}
+
+	l, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		return 0, err
+	}
+	defer func() {
+		_ = l.Close()
+	}()
+	return l.Addr().(*net.TCPAddr).Port, nil
 }

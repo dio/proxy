@@ -139,12 +139,12 @@ func isDir(path string) bool {
 	if err != nil {
 		return false
 	}
-	_ = file.Close()
-
 	fileInfo, err := file.Stat()
 	if err != nil {
+		fmt.Println("err", err)
 		return false
 	}
+	_ = file.Close()
 	return fileInfo.IsDir()
 }
 

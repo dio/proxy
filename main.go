@@ -32,7 +32,11 @@ var (
 
 func main() {
 	flags := options.NewFlags()
-	kong.Parse(flags)
+	ctx := kong.Parse(flags)
+	if err := ctx.Validate(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 
 	if flags.Version {
 		fmt.Printf("proxy version: %s (commit: %s)\n", version, commit)

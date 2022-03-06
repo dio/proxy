@@ -3,7 +3,7 @@ admin:
   address:
     socket_address:
       address: 127.0.0.1 # Admin page is only accessible locally.
-      port_value: 0
+      port_value: {{ .AdminPort }}
 
 node:
   id: "{{ .NodeID }}"
