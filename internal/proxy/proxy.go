@@ -47,11 +47,15 @@ func Run(ctx context.Context, c *config.Bootstrap) error {
 		_ = args.Cleanup()
 	}()
 
+	if c.Output != "" {
+		return nil
+	}
+
 	{
-		ctx, cancel := context.WithCancel(ctx)
+		runCtx, cancel := context.WithCancel(ctx)
 		g.Add(
 			func() error {
-				return h.Run(ctx)
+				return h.Run(runCtx)
 			},
 			func(err error) {
 				cancel()
@@ -60,9 +64,9 @@ func Run(ctx context.Context, c *config.Bootstrap) error {
 
 	{
 		r := runner.New(binaryPath)
-		ctx, cancel := context.WithCancel(ctx)
+		runCtx, cancel := context.WithCancel(ctx)
 		g.Add(func() error {
-			return r.Run(ctx, args.Values)
+			return r.Run(runCtx, args.Values)
 		},
 			func(err error) {
 				cancel()

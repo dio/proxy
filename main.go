@@ -20,6 +20,7 @@ import (
 	"os"
 
 	"github.com/alecthomas/kong"
+
 	"github.com/dio/proxy/internal/options"
 	"github.com/dio/proxy/internal/proxy"
 )

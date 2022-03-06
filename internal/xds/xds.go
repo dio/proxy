@@ -5,10 +5,11 @@ import (
 	"os"
 	"syscall"
 
+	"github.com/oklog/run"
+
 	"github.com/dio/proxy/internal/xds/config"
 	xdsserver "github.com/dio/proxy/internal/xds/server"
 	"github.com/dio/proxy/internal/xds/watcher"
-	"github.com/oklog/run"
 )
 
 // Run runs the main handler.
@@ -18,9 +19,9 @@ func Run(ctx context.Context, c *config.Bootstrap) error {
 
 	s := xdsserver.New(c)
 	{
-		ctx, cancel := context.WithCancel(ctx)
+		runCtx, cancel := context.WithCancel(ctx)
 		g.Add(func() error {
-			return s.Run(ctx)
+			return s.Run(runCtx)
 		}, func(err error) {
 			cancel()
 		})
@@ -28,9 +29,9 @@ func Run(ctx context.Context, c *config.Bootstrap) error {
 
 	w := watcher.New(c, s)
 	{
-		ctx, cancel := context.WithCancel(ctx)
+		runCtx, cancel := context.WithCancel(ctx)
 		g.Add(func() error {
-			return w.Run(ctx)
+			return w.Run(runCtx)
 		}, func(err error) {
 			cancel()
 		})

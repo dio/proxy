@@ -19,6 +19,7 @@ import (
 	_ "embed" // to allow embedding files
 	"os"
 	"os/exec"
+	"path/filepath"
 	"syscall"
 )
 
@@ -38,7 +39,7 @@ type Runner struct {
 func (r *Runner) Run(ctx context.Context, args []string) error {
 	// We don't use CommandContext here so we can send exactly SIGTERM instead of kill -9 or SIGINT
 	// when killing the process.
-	cmd := exec.Command(r.binaryPath, args...)
+	cmd := exec.Command(filepath.Clean(r.binaryPath), args...) //nolint:gosec
 	// TODO(dio): Setpdeathsig to true and execute cmd.Start in a locked thread through channel on Linux.
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	cmd.Stdout = os.Stdout
@@ -56,7 +57,7 @@ func (r *Runner) Run(ctx context.Context, args []string) error {
 
 	if cmd.Process != nil {
 		// TODO(dio): Make the following cross-platform.
-		syscall.Kill(cmd.Process.Pid, syscall.SIGTERM) // Kill the proxy process using SIGTERM.
+		_ = syscall.Kill(cmd.Process.Pid, syscall.SIGTERM) // Kill the proxy process using SIGTERM.
 	}
 	return cmd.Wait()
 }

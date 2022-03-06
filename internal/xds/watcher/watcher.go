@@ -41,9 +41,11 @@ func (w *Watcher) Run(ctx context.Context) error {
 	}
 
 	// First-time read.
-	w.update()
+	err := w.update()
+	if err != nil {
+		return err
+	}
 
-	var err error
 	w.watcher, err = fsnotify.NewWatcher()
 	if err != nil {
 		return err
@@ -62,7 +64,7 @@ func (w *Watcher) Run(ctx context.Context) error {
 			if !ok {
 				continue
 			}
-			w.update()
+			_ = w.update()
 		case err := <-w.watcher.Errors:
 			fmt.Println(err)
 		}
@@ -85,7 +87,7 @@ func (w *Watcher) update() error {
 			if !ok {
 				nodes[filepath.Dir(path)] = make([]*bootstrapv3.Bootstrap, 0)
 			}
-			b, err := os.ReadFile(path)
+			b, err := os.ReadFile(filepath.Clean(path))
 			if err != nil {
 				return err
 			}
@@ -133,11 +135,11 @@ func isDir(path string) bool {
 	if path == "" {
 		return false
 	}
-	file, err := os.Open(path)
+	file, err := os.Open(filepath.Clean(path))
 	if err != nil {
 		return false
 	}
-	defer file.Close()
+	_ = file.Close()
 
 	fileInfo, err := file.Stat()
 	if err != nil {

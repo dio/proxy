@@ -106,7 +106,7 @@ func Download(ctx context.Context) (string, error) {
 }
 
 func proxyVersion(dir string) string {
-	b, err := os.ReadFile(filepath.Join(dir, "version"))
+	b, err := os.ReadFile(filepath.Clean(filepath.Join(dir, "version")))
 	if err != nil {
 		return ""
 	}
@@ -114,7 +114,7 @@ func proxyVersion(dir string) string {
 	parts := strings.Split(captured, ".")
 	if len(parts) == 3 {
 		// Check if the binary is there. TODO(dio): Make sure we accommodate windows as well.
-		_, err = os.Lstat(filepath.Join(dir, "versions", captured, "bin", "envoy"))
+		_, err = os.Lstat(filepath.Clean(filepath.Join(dir, "versions", captured, "bin", "envoy")))
 		if err != nil {
 			return ""
 		}

@@ -20,6 +20,7 @@ import (
 	"os"
 
 	"github.com/alecthomas/kong"
+
 	"github.com/dio/proxy/internal/xds"
 	"github.com/dio/proxy/internal/xds/options"
 )

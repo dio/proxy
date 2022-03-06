@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"text/template"
 
 	bootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
@@ -120,9 +121,6 @@ func buildConfigPath(c *config.Bootstrap) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer func() {
-		_ = out.Close()
-	}()
 
 	cfg := xdsV3Envoy
 	if c.UseGoogleGRPC {
@@ -135,7 +133,7 @@ func buildConfigPath(c *config.Bootstrap) (string, error) {
 
 	var buf bytes.Buffer
 	writer := bufio.NewWriter(&buf)
-	tmpl.Execute(writer, c)
+	err = tmpl.Execute(writer, c)
 	if err != nil {
 		return "", err
 	}
@@ -151,7 +149,32 @@ func buildConfigPath(c *config.Bootstrap) (string, error) {
 		return "", err
 	}
 
-	return out.Name(), nil
+	if c.Output != "" {
+		if c.Output == "stdout" {
+			_, _ = os.Stdout.Write(buf.Bytes())
+			return c.Output, nil
+		}
+
+		if c.Output == "stderr" {
+			_, _ = os.Stderr.Write(buf.Bytes())
+			return c.Output, nil
+		}
+
+		if _, err := os.Stat(c.Output); errors.Is(err, os.ErrNotExist) {
+			err = os.MkdirAll(filepath.Dir(filepath.Clean(c.Output)), os.ModePerm)
+			if err != nil {
+				return "", err
+			}
+		} else {
+			return "", fmt.Errorf("%s exists", c.Output)
+		}
+
+		if err := os.Rename(out.Name(), c.Output); err != nil {
+			return "", err
+		}
+		return c.Output, nil
+	}
+	return out.Name(), out.Close()
 }
 
 func createAdminAddressPath() (string, error) {
@@ -159,11 +182,7 @@ func createAdminAddressPath() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer func() {
-		_ = out.Close()
-	}()
-
-	return out.Name(), nil
+	return out.Name(), out.Close()
 }
 
 func contains(entries []string, target string) bool {
@@ -175,8 +194,8 @@ func contains(entries []string, target string) bool {
 	return false
 }
 
-func validateBootstrap(bytes []byte) error {
-	j, err := yaml.YAMLToJSON(bytes)
+func validateBootstrap(content []byte) error {
+	j, err := yaml.YAMLToJSON(content)
 	if err != nil {
 		return err
 	}

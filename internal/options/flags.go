@@ -29,6 +29,7 @@ type Flags struct {
 	XDSServerURL   string `help:"Specify the xDS server URL." default:"localhost:9901"`
 	XDSClusterName string `help:"Specify the xDS cluster name." default:"xds_cluster"`
 	UseGoogleGRPC  bool   `help:"Specify to use Google gRPC client implementation."`
+	Output         string `help:"Specify the file to write the rendered config." default:"stdout"`
 	Version        bool   `help:"Show application version."`
 }
 
@@ -57,6 +58,7 @@ func (f *Flags) ToBootstrap() (*config.Bootstrap, error) {
 		XDSServerAddress: host,
 		XDSServerPort:    port,
 		XDSClusterName:   f.XDSClusterName,
+		Output:           f.Output,
 		UseGoogleGRPC:    f.UseGoogleGRPC,
 	}, nil
 }
