@@ -72,6 +72,23 @@ build: $(current_binary) ## Build the proxy binary
 # TODO(dio): Generate checksums for the assets.
 dist: $(archives) ## Generate release assets
 
+# By default, unless GOMAXPROCS is set via an environment variable or explicity in the code, the
+# tests are run with GOMAXPROCS=1. This is problematic if the a test requires more than one CPU, for
+# example when running t.Parallel() in a test.
+export GOMAXPROCS ?=4
+test: ## Run all unit tests
+	@printf "$(ansi_format_dark)" $@ "running unit tests"
+	@$(go) test $(testable_go_packages)
+	@printf "$(ansi_format_bright)" $@ "ok"
+
+check: ## Verify contents of last commit
+	$(MAKE) format
+	$(MAKE) lint
+	@if [ ! -z "`git status -s`" ]; then \
+		echo "The following differences will fail CI until committed:"; \
+		git diff --exit-code; \
+	fi
+
 format: go.mod $(all_nongen_go_sources) $(goimports) ## Format all Go sources
 	@printf "$(ansi_format_dark)" $@ "formatting files"
 	@$(go) mod tidy
