@@ -34,7 +34,8 @@ linux_platforms       := linux_amd64 linux_arm64
 non_windows_platforms := darwin_amd64 darwin_arm64 $(linux_platforms)
 windows_platforms     := windows_amd64
 
-archives := $(non_windows_platforms:%=dist/$(name)_$(VERSION)_%.tar.gz) $(windows_platforms:%=dist/$(name)_$(VERSION)_%.zip)
+archives  := $(non_windows_platforms:%=dist/$(name)_$(VERSION)_%.tar.gz) $(windows_platforms:%=dist/$(name)_$(VERSION)_%.zip)
+checksums := dist/$(name)_$(VERSION)_checksums.txt
 
 # Go tools directory holds the binaries of Go-based tools.
 go_tools_dir := $(CACHE_DIR)/tools/go
@@ -69,8 +70,14 @@ help: ## Describe how to use each target
 build: $(current_binary) ## Build the proxy binary
 
 # This generates the assets that attach to a release.
-# TODO(dio): Generate checksums for the assets.
-dist: $(archives) ## Generate release assets
+dist: $(archives) $(checksums) ## Generate release assets
+
+# Darwin doesn't have sha256sum. See https://github.com/actions/virtual-environments/issues/90
+sha256sum := $(if $(findstring darwin,$(goos)),shasum -a 256,sha256sum)
+$(checksums): $(archives)
+	@printf "$(ansi_format_dark)" sha256sum "generating $@"
+	@$(sha256sum) $^ > $@
+	@printf "$(ansi_format_bright)" sha256sum "ok"
 
 # By default, unless GOMAXPROCS is set via an environment variable or explicity in the code, the
 # tests are run with GOMAXPROCS=1. This is problematic if the a test requires more than one CPU, for
