@@ -30,6 +30,8 @@ it. As an example, see: [testdata/hello](./testdata/hello/).
 proxy --xds-resources testdata/hello --admin-port 9000
 ```
 
+> Note: you can start with a non-existent directory as argument for `--xds-resources`.
+
 This starts proxy with configurations defined in `testdata/hello/*.yaml`. Note that it watches
 changes inside that directory. For example, if you change the listener address for `listener_0` in
 [`testdata/hello/a.yaml`](./testdata/hello/a.yaml), e.g. from `10000` to `10001` it will immediately
@@ -68,6 +70,21 @@ Also, you can _go run_ it directly:
 
 ```console
 go run github.com/dio/proxy@latest --help
+```
+
+### Standalone xds-server
+
+You can download standalone `xds-server` starts from [v0.0.1-rc2](https://github.com/dio/proxy/releases/tag/v0.0.1-rc2).
+
+
+```console
+xds-server --resources testdata/hello
+```
+
+Using Go, you can do:
+
+```console
+go run github.com/dio/proxy/xds-server@latest --help
 ```
 
 ## Embedding
