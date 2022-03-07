@@ -55,6 +55,7 @@ func (r *Runner) Run(ctx context.Context, args []string) error {
 
 	<-ctx.Done()
 
-	starter.Kill()
+	_ = starter.Kill()
+
 	return starter.Wait()
 }
