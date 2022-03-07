@@ -122,10 +122,6 @@ github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+
 github.com/stretchr/testify v1.5.1/go.mod h1:5W2xD1RspED5o8YsWQXVCued0rvSQ+mT+I5cxcmMvtA=
 github.com/stretchr/testify v1.7.0 h1:nwc3DEeHmmLAfoZucVR881uASk0Mfjw8xYJ99tb5CcY=
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
-github.com/tetratelabs/log v0.2.2-rc0 h1:+8WxcKPwyrIW1o1Gr5pzyP0h2VhNGyK6QKEJAznuTzc=
-github.com/tetratelabs/log v0.2.2-rc0/go.mod h1:aEyQ5Pi5HqM7QBUeVIi4RI7QKwxPPEgNc2FkquJU/6M=
-github.com/tetratelabs/telemetry v0.7.2-rc1 h1:r4WKH3Avr7/sqVycR2H5V66n/K1hkWnsu956DSinSQY=
-github.com/tetratelabs/telemetry v0.7.2-rc1/go.mod h1:jDUcf1A2u4F5V1io5RdipM/bKz/hFCsx/RAgGopC37s=
 github.com/ulikunitz/xz v0.5.10 h1:t92gobL9l3HE202wg3rlk19F6X+JOxl9BBrCCMYEYd8=
 github.com/ulikunitz/xz v0.5.10/go.mod h1:nbz6k7qbPmH4IRqmfOplQw/tblSgqTqBwxkY0oWt/14=
 go.opentelemetry.io/proto/otlp v0.7.0/go.mod h1:PqfVotwruBrMGOCsRd/89rSnXhoiJIqeYNgFYFoEGnI=

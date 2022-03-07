@@ -20,7 +20,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"syscall"
 )
 
 // New returns a new runner.
@@ -40,14 +39,13 @@ func (r *Runner) Run(ctx context.Context, args []string) error {
 	// We don't use CommandContext here so we can send exactly SIGTERM instead of kill -9 or SIGINT
 	// when killing the process.
 	cmd := exec.Command(filepath.Clean(r.binaryPath), args...) //nolint:gosec
-	// TODO(dio): Setpdeathsig to true and execute cmd.Start in a locked thread through channel on Linux.
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-
 	// TODO(dio): Add log streamer when we have decided the log library that we want to use.
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	err := cmd.Start()
+	starter := newStarter(cmd)
+
+	err := starter.Start(ctx)
 	if err != nil {
 		return err
 	}
@@ -57,9 +55,6 @@ func (r *Runner) Run(ctx context.Context, args []string) error {
 
 	<-ctx.Done()
 
-	if cmd.Process != nil {
-		// TODO(dio): Make the following cross-platform.
-		_ = syscall.Kill(cmd.Process.Pid, syscall.SIGTERM) // Kill the proxy process using SIGTERM.
-	}
-	return cmd.Wait()
+	starter.Kill()
+	return starter.Wait()
 }
