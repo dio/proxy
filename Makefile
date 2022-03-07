@@ -5,6 +5,8 @@ include Tools.mk
 
 name := proxy
 
+server_name := xds-server
+
 # VERSION is used in release artifacts names. This should be in <major>.<minor>.<patch> (without v
 # prefix). When generating actual release assets this can be resolved using "git describe --tags --long".
 VERSION ?= dev
@@ -21,14 +23,18 @@ goos   := $(shell $(go) env GOOS)
 # Local cache directory.
 CACHE_DIR ?= $(root_dir).cache
 
-e2e_go_sources        := $(wildcard e2e/*.go e2e/*/*.go)
-all_nongen_go_sources := $(wildcard *.go e2e/*.go handler/*.go handler/*/*.go internal/*/*.go runner/*.go xds-server/*.go)
-all_go_sources        := $(all_nongen_go_sources)
-main_go_sources       := $(wildcard $(filter-out %_test.go $(e2e_go_sources),$(all_go_sources)))
-testable_go_packages  := $(sort $(foreach f,$(dir $(main_go_sources)),$(if $(findstring ./,$(f)),./,./$(f))))
+e2e_go_sources         := $(wildcard e2e/*.go e2e/*/*.go)
+all_nongen_go_sources  := $(wildcard *.go e2e/*.go handler/*.go handler/*/*.go internal/*/*.go runner/*.go xds-server/*.go)
+all_go_sources         := $(all_nongen_go_sources)
+main_go_sources        := $(wildcard $(filter-out %_test.go $(e2e_go_sources),$(all_go_sources)))
+server_main_go_sources := $(wildcard xds-server/*.go internal/*/*.go) # TODO(dio): Filter out %_test.go.
+testable_go_packages   := $(sort $(foreach f,$(dir $(main_go_sources)),$(if $(findstring ./,$(f)),./,./$(f))))
 
-current_binary_path := build/proxy_$(goos)_$(goarch)
-current_binary      := $(current_binary_path)/proxy$(goexe)
+current_binary_path := build/$(name)_$(goos)_$(goarch)
+current_binary      := $(current_binary_path)/$(name)$(goexe)
+
+current_server_binary_path := build/$(server_name)_$(goos)_$(goarch)
+current_server_binary      := $(current_server_binary_path)/$(server_name)$(goexe)
 
 linux_platforms       := linux_amd64 linux_arm64
 non_windows_platforms := darwin_amd64 darwin_arm64 $(linux_platforms)
@@ -36,6 +42,9 @@ windows_platforms     := windows_amd64
 
 archives  := $(non_windows_platforms:%=dist/$(name)_$(VERSION)_%.tar.gz) $(windows_platforms:%=dist/$(name)_$(VERSION)_%.zip)
 checksums := dist/$(name)_$(VERSION)_checksums.txt
+
+server_archives  := $(non_windows_platforms:%=dist/$(server_name)_$(VERSION)_%.tar.gz) $(windows_platforms:%=dist/$(server_name)_$(VERSION)_%.zip)
+server_checksums := dist/$(server_name)_$(VERSION)_checksums.txt
 
 # Go tools directory holds the binaries of Go-based tools.
 go_tools_dir := $(CACHE_DIR)/tools/go
@@ -67,14 +76,19 @@ help: ## Describe how to use each target
 	@printf "$(ansi_$(name))$(f_white)\n"
 	@awk 'BEGIN {FS = ":.*?## "} /^[0-9a-zA-Z_-]+:.*?## / {sub("\\\\n",sprintf("\n%22c"," "), $$2);printf "$(ansi_format_dark)", $$1, $$2}' $(MAKEFILE_LIST)
 
-build: $(current_binary) ## Build the proxy binary
+build: $(current_binary) $(current_server_binary) ## Build the proxy binary
 
 # This generates the assets that attach to a release.
-dist: $(archives) $(checksums) ## Generate release assets
+dist: $(archives) $(server_archives) $(checksums) $(server_checksums) ## Generate release assets
 
 # Darwin doesn't have sha256sum. See https://github.com/actions/virtual-environments/issues/90
 sha256sum := $(if $(findstring darwin,$(goos)),shasum -a 256,sha256sum)
 $(checksums): $(archives)
+	@printf "$(ansi_format_dark)" sha256sum "generating $@"
+	@$(sha256sum) $^ > $@
+	@printf "$(ansi_format_bright)" sha256sum "ok"
+
+$(server_checksums): $(server_archives)
 	@printf "$(ansi_format_dark)" sha256sum "generating $@"
 	@$(sha256sum) $^ > $@
 	@printf "$(ansi_format_bright)" sha256sum "ok"
@@ -129,6 +143,12 @@ build/$(name)_%/$(name): $(main_go_sources)
 build/$(name)_%/$(name).exe: $(main_go_sources)
 	$(call go-build,$@,$<)
 
+build/$(server_name)_%/$(server_name): $(server_main_go_sources)
+	$(call go-build,$@,$<)
+
+build/$(server_name)_%/$(server_name).exe: $(server_main_go_sources)
+	$(call go-build,$@,$<)
+
 dist/$(name)_$(VERSION)_%.tar.gz: build/$(name)_%/$(name)
 	@printf "$(ansi_format_dark)" tar.gz "tarring $@"
 	@mkdir -p $(@D)
@@ -138,6 +158,20 @@ dist/$(name)_$(VERSION)_%.tar.gz: build/$(name)_%/$(name)
 # TODO(dio): Archive the signed binary instead of the unsigned one. And provide pivot when
 # building on Windows.
 dist/$(name)_$(VERSION)_%.zip: build/$(name)_%/$(name).exe
+	@printf "$(ansi_format_dark)" zip "zipping $@"
+	@mkdir -p $(@D)
+	@zip -qj $@ $<
+	@printf "$(ansi_format_bright)" zip "ok"
+
+dist/$(server_name)_$(VERSION)_%.tar.gz: build/$(server_name)_%/$(server_name)
+	@printf "$(ansi_format_dark)" tar.gz "tarring $@"
+	@mkdir -p $(@D)
+	@tar -C $(<D) -cpzf $@ $(<F)
+	@printf "$(ansi_format_bright)" tar.gz "ok"
+
+# TODO(dio): Archive the signed binary instead of the unsigned one. And provide pivot when
+# building on Windows.
+dist/$(server_name)_$(VERSION)_%.zip: build/$(server_name)_%/$(server_name).exe
 	@printf "$(ansi_format_dark)" zip "zipping $@"
 	@mkdir -p $(@D)
 	@zip -qj $@ $<
