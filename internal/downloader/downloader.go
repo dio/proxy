@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"html/template"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -48,7 +49,11 @@ func DownloadVersionedBinary(ctx context.Context, archive archives.Archive, dest
 
 	destinationPath := filepath.Join(destinationDir, archive.BinaryName())
 	if _, err := os.Stat(destinationPath); err != nil {
-		downloadURL := GetArchiveURL(archive)
+		var downloadURL string
+		downloadURL, err = GetArchiveURL(archive)
+		if err != nil {
+			return "", err
+		}
 		// TODO(dio): Streaming the bytes from remote file. We decided to use this for skipping copying
 		// the retry logic that has already implemented in github.com/bazelbuild/bazelisk/httputil.
 		data, _, err := httputil.ReadRemoteFile(downloadURL, "")
@@ -60,6 +65,7 @@ func DownloadVersionedBinary(ctx context.Context, archive archives.Archive, dest
 		if err != nil {
 			return "", err
 		}
+		// We currently can extract .tar.gz and tar.xz only.
 		if xz.ValidHeader(maybeXzHeader) {
 			var r *xz.Reader
 			r, err = xz.NewReader(br)
@@ -84,9 +90,26 @@ func DownloadVersionedBinary(ctx context.Context, archive archives.Archive, dest
 }
 
 // GetArchiveURL renders the archive URL pattern to return the actual archive URL.
-func GetArchiveURL(archive archives.Archive) string {
-	// TODO(dio): Use template instead of simple fmt.Sprintf.
-	return fmt.Sprintf(archive.URLPattern(), archive.Version(), archive.Version(), runtime.GOOS) // We always do amd64, ignore the GOARCH for now.
+func GetArchiveURL(archive archives.Archive) (string, error) {
+	// TODO(dio): Add more template helpers (FuncMap), especially for transforming GOOS and GOARCH
+	// variants.
+	tmpl, err := template.New("urlpattern").Parse(archive.URLPattern())
+	if err != nil {
+		return "", err
+	}
+	buf := new(bytes.Buffer)
+	if err := tmpl.Execute(buf, struct {
+		GOARCH  string
+		GOOS    string
+		Version string
+	}{
+		GOARCH:  runtime.GOARCH,
+		GOOS:    runtime.GOOS,
+		Version: archive.Version(),
+	}); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
 }
 
 func Download(ctx context.Context) (string, error) {

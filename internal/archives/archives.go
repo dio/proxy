@@ -15,12 +15,19 @@
 package archives
 
 import (
+	"os"
 	"path/filepath"
 
 	"github.com/codeclysm/extract"
 )
 
-var DefaultProxyVersion = "1.21.0" // TODO(dio): Define minimum version instead.
+var DefaultProxyVersion = func() string {
+	version := os.Getenv("PROXY_VERSION")
+	if version == "" {
+		version = "1.21.0" // TODO(dio): Define minimum version instead.
+	}
+	return version
+}()
 
 type Archive interface {
 	Version() string
@@ -50,7 +57,8 @@ func (p *Proxy) BinaryDir() string {
 }
 
 func (p *Proxy) URLPattern() string {
-	return "https://archive.tetratelabs.io/envoy/download/v%s/envoy-v%s-%s-amd64.tar.xz"
+	// Ignore GOARCH for now, we always default to amd64.
+	return "https://archive.tetratelabs.io/envoy/download/v{{ .Version }}/envoy-v{{ .Version }}-{{ .GOOS }}-amd64.tar.xz"
 }
 
 func (p *Proxy) Renamer() extract.Renamer {
