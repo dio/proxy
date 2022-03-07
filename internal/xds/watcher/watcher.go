@@ -2,6 +2,7 @@ package watcher
 
 import (
 	"context"
+	_ "embed" // to allow embedding files.
 	"errors"
 	"fmt"
 	"os"
@@ -22,6 +23,9 @@ import (
 	"github.com/dio/proxy/internal/xds/config"
 	xdsserver "github.com/dio/proxy/internal/xds/server"
 )
+
+//go:embed templates/sample-v3.yaml
+var sampleV3 []byte
 
 func New(c *config.Bootstrap, updater xdsserver.SnaphotUpdater) *Watcher {
 	return &Watcher{
@@ -136,6 +140,17 @@ func isDir(path string) bool {
 	if path == "" {
 		return false
 	}
+
+	if _, err := os.Stat(filepath.Clean(path)); errors.Is(err, os.ErrNotExist) {
+		// When the requested directory doesn't exist, create one and put a sample config.
+		if err := os.MkdirAll(filepath.Clean(path), os.ModePerm); err != nil {
+			return false
+		}
+		if err := os.WriteFile(filepath.Join(filepath.Clean(path), "sample.yaml"), sampleV3, os.ModePerm); err != nil {
+			return false
+		}
+	}
+
 	file, err := os.Open(filepath.Clean(path))
 	if err != nil {
 		return false

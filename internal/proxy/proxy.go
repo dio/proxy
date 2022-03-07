@@ -85,17 +85,6 @@ func Run(ctx context.Context, c *config.Bootstrap) error {
 	}
 
 	{
-		runCtx, cancel := context.WithCancel(ctx)
-		g.Add(
-			func() error {
-				return h.Run(runCtx)
-			},
-			func(err error) {
-				cancel()
-			})
-	}
-
-	{
 		r := runner.New(binaryPath)
 		runCtx, cancel := context.WithCancel(ctx)
 		g.Add(func() error {
