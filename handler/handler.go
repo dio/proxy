@@ -116,6 +116,11 @@ func (h *Handler) Args() (*Args, error) {
 	}
 	// TODO(dio): Accommodate more options from:
 	// https://github.com/istio/istio/blob/f6b1aa2d1956712018cd69051a7405424fbb7e04/pkg/envoy/proxy.go#L122-L125.
+	if !contains(options.ForwardedArgs, "--log-format") {
+		// time="2022/03/07 12:24:11" level=debug msg="ReceiveAPIGateways" scope="ratelimit-service"
+		// TODO(dio): Allow to use json format.
+		args = append(args, "--log-format", `time="%Y/%m/%d %T" level=%l msg="%v" scope=proxy`)
+	}
 
 	args = append(args, options.ForwardedArgs...)
 	return &Args{

@@ -51,7 +51,6 @@ func Run(ctx context.Context, c *config.Bootstrap) error {
 
 		xdsServer := xdsserver.New(xdsBootstrap)
 		{
-
 			runCtx, cancel := context.WithCancel(ctx)
 			g.Add(func() error {
 				return xdsServer.Run(runCtx)
