@@ -32,11 +32,7 @@ var (
 
 func main() {
 	flags := new(options.Flags)
-	ctx := kong.Parse(flags)
-	if err := ctx.Validate(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	kong.Parse(flags)
 
 	if flags.Version {
 		fmt.Printf("xds-server version: %s (commit: %s)\n", version, commit)
