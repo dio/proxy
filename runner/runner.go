@@ -53,9 +53,10 @@ func (r *Runner) Run(ctx context.Context, args []string) error {
 	// TODO(dio): Do checking on admin address path availability, so we know that the process is
 	// ready.
 
-	<-ctx.Done()
-
-	_ = starter.Kill()
+	go func() {
+		<-ctx.Done()
+		_ = starter.Kill()
+	}()
 
 	return starter.Wait()
 }
