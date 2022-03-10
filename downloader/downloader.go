@@ -112,7 +112,7 @@ func GetArchiveURL(archive archives.Archive) (string, error) {
 	return buf.String(), nil
 }
 
-func Download(ctx context.Context) (string, error) {
+func Download(ctx context.Context, versionUsed string) (string, error) {
 	// The func-e home is defined by $FUNC_E_HOME or if not defined: ~/.func-e.
 	// The binary should be downloaded to $FUNC_E_HOME/versions/1.20.1/bin/envoy
 	funcEHome := os.Getenv(funcEHomeEnvKey)
@@ -124,7 +124,10 @@ func Download(ctx context.Context) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
 	defer cancel()
 
-	archive := &archives.Proxy{VersionUsed: proxyVersion(funcEHome)} // TODO(dio): fallback to default when older than the minimum version.
+	if versionUsed == "" {
+		versionUsed = proxyVersion(funcEHome)
+	}
+	archive := &archives.Proxy{VersionUsed: versionUsed} // TODO(dio): fallback to default when older than the minimum version.
 	return DownloadVersionedBinary(ctx, archive, funcEHome)
 }
 
