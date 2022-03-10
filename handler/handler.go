@@ -33,7 +33,6 @@ import (
 
 	"github.com/dio/proxy/config"
 	_ "github.com/dio/proxy/internal/extensions" // to allow resolving type URLs.
-	"github.com/dio/proxy/internal/options"
 )
 
 // TODO(dio): To add xds-v3-google.yaml for using google_grpc.
@@ -80,7 +79,7 @@ func (h *Handler) Args() (*Args, error) {
 	var adminAddressPath string
 
 	// Path to configuration file.
-	if !contains(options.ForwardedArgs, "-c") && !contains(options.ForwardedArgs, "--config-path") {
+	if !contains(config.ParsedForwardedArgs, "-c") && !contains(config.ParsedForwardedArgs, "--config-path") {
 		configPath, err = buildConfigPath(h.c)
 		if err != nil {
 			return nil, fmt.Errorf("failed to build config: %w", err)
@@ -88,13 +87,13 @@ func (h *Handler) Args() (*Args, error) {
 		args = append(args, "-c", configPath)
 	}
 
-	if !contains(options.ForwardedArgs, "--use-dynamic-base-id") && !contains(options.ForwardedArgs, "--base-id") {
+	if !contains(config.ParsedForwardedArgs, "--use-dynamic-base-id") && !contains(config.ParsedForwardedArgs, "--base-id") {
 		// The server chooses a base ID dynamically. Supersedes a static base ID. May not be used when
 		// the restart epoch is non-zero.
 		args = append(args, "--use-dynamic-base-id") // So we can run multiple proxies.
 	}
 
-	if !contains(options.ForwardedArgs, "--admin-address-path") {
+	if !contains(config.ParsedForwardedArgs, "--admin-address-path") {
 		adminAddressPath, err = createAdminAddressPath()
 		if err != nil {
 			return nil, err
@@ -102,27 +101,27 @@ func (h *Handler) Args() (*Args, error) {
 		args = append(args, "--admin-address-path", adminAddressPath)
 	}
 
-	if !contains(options.ForwardedArgs, "--disable-hot-restart") {
+	if !contains(config.ParsedForwardedArgs, "--disable-hot-restart") {
 		args = append(args, "--disable-hot-restart") // Disable hot restart functionality.
 	}
 
-	if !contains(options.ForwardedArgs, "--drain-strategy") {
+	if !contains(config.ParsedForwardedArgs, "--drain-strategy") {
 		args = append(args, "--drain-strategy", "immediate")
 	}
 
-	if !contains(options.ForwardedArgs, "--file-flush-interval-msec") {
+	if !contains(config.ParsedForwardedArgs, "--file-flush-interval-msec") {
 		// Reference: https://github.com/istio/istio/blob/f6b1aa2d1956712018cd69051a7405424fbb7e04/pkg/envoy/proxy.go#L126-L132.
 		args = append(args, "--file-flush-interval-msec", "1000")
 	}
 	// TODO(dio): Accommodate more options from:
 	// https://github.com/istio/istio/blob/f6b1aa2d1956712018cd69051a7405424fbb7e04/pkg/envoy/proxy.go#L122-L125.
-	if !contains(options.ForwardedArgs, "--log-format") {
+	if !contains(config.ParsedForwardedArgs, "--log-format") {
 		// time="2022/03/07 12:24:11" level=debug msg="ReceiveAPIGateways" scope="ratelimit-service"
 		// TODO(dio): Allow to use json format.
 		args = append(args, "--log-format", `time="%Y/%m/%d %T" level=%l msg="%v" scope=proxy`)
 	}
 
-	args = append(args, options.ForwardedArgs...)
+	args = append(args, config.ParsedForwardedArgs...)
 	return &Args{
 		Values: args,
 		Cleanup: func() error {

@@ -18,6 +18,8 @@ import (
 	"os"
 )
 
+var ParsedForwardedArgs ForwardedArgs
+
 // Forwarded arguments. This is used by handler when building handler#Args for spawning the proxy
 // process.
 type ForwardedArgs []string
