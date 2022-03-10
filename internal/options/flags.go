@@ -22,8 +22,6 @@ import (
 	"github.com/dio/proxy/config"
 )
 
-var ForwardedArgs config.ForwardedArgs
-
 type Flags struct {
 	NodeID         string `help:"Specify the proxy node ID." default:"default"`
 	XDSServerURL   string `help:"Specify the xDS server URL." default:"localhost:9901"`
@@ -39,7 +37,7 @@ type Flags struct {
 // NewFlags returns a parse-able instance to kong.Parse().
 func NewFlags() *Flags {
 	// We keep the forwarded args, and "modify" os.Args so it contains only maybe-valid-flags.
-	os.Args = ForwardedArgs.Parse()
+	os.Args = config.ParsedForwardedArgs.Parse()
 	// TODO(dio): Revert os.Args.
 	return new(Flags)
 }

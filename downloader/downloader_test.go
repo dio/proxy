@@ -25,8 +25,8 @@ import (
 	"github.com/bazelbuild/bazelisk/httputil"
 	"github.com/stretchr/testify/require"
 
+	"github.com/dio/proxy/downloader"
 	"github.com/dio/proxy/internal/archives"
-	"github.com/dio/proxy/internal/downloader"
 )
 
 var (
