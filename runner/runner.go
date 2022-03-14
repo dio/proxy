@@ -23,15 +23,17 @@ import (
 )
 
 // New returns a new runner.
-func New(binaryPath string) *Runner {
+func New(binaryPath string, silence bool) *Runner {
 	return &Runner{
 		binaryPath: binaryPath,
+		silence:    silence,
 	}
 }
 
 // Runner runs proxy at binary path.
 type Runner struct {
 	binaryPath string
+	silence    bool
 }
 
 // Run runs proxy with the specified arguments.
@@ -40,8 +42,10 @@ func (r *Runner) Run(ctx context.Context, args []string) error {
 	// when killing the process.
 	cmd := exec.Command(filepath.Clean(r.binaryPath), args...) //nolint:gosec
 	// TODO(dio): Add log streamer when we have decided the log library that we want to use.
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	if !r.silence {
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+	}
 
 	starter := newStarter(cmd)
 
@@ -53,9 +57,18 @@ func (r *Runner) Run(ctx context.Context, args []string) error {
 	// TODO(dio): Do checking on admin address path availability, so we know that the process is
 	// ready.
 
-	<-ctx.Done()
+	go func() {
+		<-ctx.Done()
+		_ = starter.Kill()
+	}()
 
-	_ = starter.Kill()
+	err = starter.Wait()
+	if err != nil {
+		return err
+	}
 
-	return starter.Wait()
+	if cmd.Process != nil {
+		return cmd.Process.Kill()
+	}
+	return nil
 }

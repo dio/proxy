@@ -85,7 +85,7 @@ func Run(ctx context.Context, c *config.Bootstrap) error {
 	}
 
 	{
-		r := runner.New(binaryPath)
+		r := runner.New(binaryPath, false)
 		runCtx, cancel := context.WithCancel(ctx)
 		g.Add(func() error {
 			return r.Run(runCtx, args.Values)
